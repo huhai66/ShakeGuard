@@ -1,0 +1,17 @@
+# Android编译产物
+build/
+app/build/
+
+# Gradle缓存
+.gradle
+.gradlew
+.gradlew.bat
+
+# 二进制安装包
+*.apk
+*.dex
+
+# IDE配置
+.idea
+.vscode
+*.iml
