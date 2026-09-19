@@ -11,25 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * 离线模板调参台 —— 拿一张真机截图，复现 ImageRecognizer 的打分，然后比较不同模板设计。
- *
- * 为什么要这个：线上那个 0.65 的失败没有可复现的输入就没法调。有了真截图，就能在本地
- * 把「模板长什么样 → 在 × 处得几分」这条因果链直接测出来，而不是改一版、出一次包、
- * 等一次装机反馈。
- *
- * 打分公式与 OpenCV 的 TM_CCOEFF_NORMED 完全一致：
- *
- *   R(x,y) = Σ T'(x',y')·I'(x+x', y+y')  /  sqrt( Σ T'² · Σ I'² )
- *
- * 其中 T' = T - mean(T)，I' = 窗口 - mean(窗口)。用积分图把窗口均值/方差降到 O(1)，
- * 否则 720×1600 的图逐窗口重算均值会慢到没法迭代。
- *
- * 用法：java Tune <截图路径> [已知×中心X 已知×中心Y]   （后两个是原图像素坐标，可选）
- */
-public class Tune {
 
-    /** 与 ImageRecognizer 保持一致：截图先缩到这个宽度再做匹配。 */
+public class Tune {
+ 
     static final int MAX_WIDTH = 720;
     static final double THRESHOLD = 0.8;
 
@@ -57,7 +41,6 @@ public class Tune {
         double[] img = gray(small);
         System.out.printf("缩放后 %dx%d (scale=%.4f)%n", w, h, scale);
 
-        // 已知 × 的屏幕坐标 → 缩略图坐标，用来单独看"真正的 × 处得了多少分"
         int tx = -1, ty = -1;
         if (args.length >= 3) {
             tx = (int) Math.round(Integer.parseInt(args[1]) * scale);
@@ -130,8 +113,6 @@ public class Tune {
     }
 
     static List<Variant> variants() {
-        // 现行尺寸表的相邻两档差 4~8px，× 的真实边长落在档与档之间时，最近的一档也要
-        // 差 20% 以上，相关系数直接掉到阈下。这里按"加密到步长 2"检验这个判断。
         int[] dense = {12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 38, 42, 46, 50};
         int[] textSizes = {22, 26, 30, 36, 42, 50, 60};
         List<Variant> list = new ArrayList<>();
@@ -147,7 +128,6 @@ public class Tune {
 
     // ---- 以下与评分有关的部分，刻意和 OpenCV 的 TM_CCOEFF_NORMED 对齐 ----
 
-    /** 模板去均值，同时返回 Σ T'²。 */
     static double[] zeroMean(double[] t) {
         double sum = 0;
         for (double v : t) sum += v;
