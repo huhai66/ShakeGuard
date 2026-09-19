@@ -6,6 +6,11 @@
     广告常常挂在**没有输入焦点的浮层窗口**上，此时 rootInActiveWindow 返回的是底下那个
     正常界面，广告子树根本进不了扫描范围——表现就是“屏幕上明明有广告，日志里却什么都没有”。
     这个标记本身不改行为，只让我们能看见并区分这种情况。
+  canPerformGestures=true：**图像识别的点击全靠它**。dispatchGesture 会先过
+    AccessibilityServiceConnection.sendGesture 里的 mSecurityPolicy.canPerformGestures(this)，
+    而该能力位就来自这个属性。缺了它，手势不会被注入，dispatchGesture 还会直接返回 false ——
+    表现是"图像识别命中"日志照打、坐标算得也对，但屏幕上什么都没发生，极难从现象反推。
+    加回来之后，图像识别的点击才真正生效。
   本服务只做“找跳过按钮→点击”，不采集、不上传任何界面信息。
 -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
@@ -14,5 +19,6 @@
     android:accessibilityFlags="flagDefault|flagReportViewIds|flagIncludeNotImportantViews|flagRetrieveInteractiveWindows"
     android:canRetrieveWindowContent="true"
     android:canTakeScreenshot="true"
+    android:canPerformGestures="true"
     android:description="@string/accessibility_description"
     android:notificationTimeout="100" />

@@ -26,6 +26,20 @@ object ImageRecognizer {
     private const val MAX_WIDTH = 720
 
     /**
+     * 高置信早退阈值。
+     *
+     * 模板开销按边长平方增长，而尺寸表是**从小到大**试的，所以末尾那几档大的极贵：
+     * 34/38/42/46/50 这 5 档就占了全部匹配代价的约 65%（Σs² 里 8980 / 13720）。
+     * 一旦某一档已经拿到 ≥[EARLY_EXIT_SCORE] 的分数，剩下的档位基本不可能翻盘，
+     * 继续算纯属浪费 —— 而这段浪费正落在**开屏最需要快的那一下**上。
+     *
+     * 取 0.88 而不是贴着阈值 0.8：实测真命中能到 0.90，而误命中很少能上 0.88，
+     * 用高阈值换"早退不改变点击目标"这个性质。**注意它只影响性能，不影响判定门槛**——
+     * 低于它但 ≥[THRESHOLD] 的命中照收不误，只是会继续把剩余模板跑完。
+     */
+    private const val EARLY_EXIT_SCORE = 0.88
+
+    /**
      * 模板边长。**步长必须够密**，这一条是拿真机截图离线量出来的，不是估的。
      *
      * 相关分对尺寸极其敏感：相邻两档差 4~8px 时，× 的真实边长一旦落在档与档中间，
@@ -63,7 +77,18 @@ object ImageRecognizer {
      *                 还是以文字渲染的 X / x —— 三者要调的东西完全不同。
      * @param topScore 所有模板里的最高相关系数，**低于 [THRESHOLD] 时也会返回**。
      */
-    data class Result(val hits: List<Hit>, val topScore: Double, val topGlyph: String)
+    /**
+     * @param earlyExit 因拿到高置信命中而提前收工（见 [EARLY_EXIT_SCORE]）。此时 [topScore]
+     *                  与 [hits] 只覆盖「算到的那几档」，不是全表的最高分 —— 有命中时够用，
+     *                  但**未命中时一定为 false**（未命中根本不会早退），所以那句
+     *                  「未命中，最高 X.XX」的诊断含义没有被削弱。
+     */
+    data class Result(
+        val hits: List<Hit>,
+        val topScore: Double,
+        val topGlyph: String,
+        val earlyExit: Boolean = false,
+    )
 
     @Volatile
     private var ready = false
@@ -95,12 +120,15 @@ object ImageRecognizer {
         var topScore = 0.0
         // 记下最高分是哪个字形给的：0.66 来自「画×」还是来自「X」，要调的方向完全不同
         var topGlyph = ""
+        var earlyExit = false
         for (tmpl in templates) {
             val mat = tmpl.mat
             if (mat.cols() > gray.cols() || mat.rows() > gray.rows()) continue
             val result = Mat()
             Imgproc.matchTemplate(gray, mat, result, Imgproc.TM_CCOEFF_NORMED)
             val minMax = Core.minMaxLoc(result)
+            // 立刻释放：下面可能要走早退分支，不能再依赖循环末尾那次 release
+            result.release()
             // TM_CCOEFF_NORMED 对亮度反转严格反号，恒有「黑×模板.maxVal == -(白×模板.minVal)」，
             // 且位置相同（已在真实截图上逐尺寸验证）。所以同一份白×模板把 minVal 取负，就等于
             // 「黑 × 压亮底」那个极性的分数，不必再生成一份黑色模板。省下的模板额度正好用来补小尺寸。
@@ -123,8 +151,12 @@ object ImageRecognizer {
                         glyph = tmpl.label,
                     )
                 )
+                // 已经足够确信了，剩下那些更大也更贵的档位不值得再算。见 EARLY_EXIT_SCORE。
+                if (score >= EARLY_EXIT_SCORE) {
+                    earlyExit = true
+                    break
+                }
             }
-            result.release()
         }
 
         gray.release()
@@ -142,6 +174,7 @@ object ImageRecognizer {
             },
             topScore = topScore,
             topGlyph = topGlyph,
+            earlyExit = earlyExit,
         )
     }
 

@@ -2,6 +2,7 @@ package com.example.shakeguard.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.SystemClock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -80,8 +81,19 @@ class SkipSettings private constructor(context: Context) {
     private val _lastEventTime = MutableStateFlow(0L)
     val lastEventTime: StateFlow<Long> = _lastEventTime
 
-    /** 无障碍服务每收到一个事件就调用，用于判断服务是否存活。 */
+    private var lastEventReport = 0L
+
+    /**
+     * 无障碍服务每收到一个事件就调用，用于判断服务是否存活。
+     *
+     * **必须节流**：微博这类应用每秒能发上百个事件，而每个事件都写一次 StateFlow 会在
+     * 主线程（事件回调所在的线程）上唤醒 UI 侧的收集协程。UI 判断存活的阈值是 10 秒
+     * （见 MainScreen 的 `nowTick - lastEvent < 10000`），1 秒粒度绰绰有余。
+     */
     fun onEvent() {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastEventReport < EVENT_REPORT_MS) return
+        lastEventReport = now
         _lastEventTime.value = System.currentTimeMillis()
     }
 
@@ -90,6 +102,9 @@ class SkipSettings private constructor(context: Context) {
         private const val KEY_ENABLED = "enabled"
         private const val KEY_COUNT = "count"
         private const val KEY_IMAGE_RECOG = "image_recognition"
+
+        /** 「服务还活着」的刷新粒度，见 onEvent()。 */
+        private const val EVENT_REPORT_MS = 1000L
 
         private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
 
