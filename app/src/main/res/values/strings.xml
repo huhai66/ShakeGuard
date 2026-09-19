@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AD tool</string>
+    <string name="accessibility_description">自动识别开屏广告和“摇一摇”广告上的“跳过”按钮并帮您点掉，让不熟悉手机操作的中老年用户也能无感使用。本工具只点击广告的“跳过”，不读取、不上传您的任何个人信息。</string>
+</resources>

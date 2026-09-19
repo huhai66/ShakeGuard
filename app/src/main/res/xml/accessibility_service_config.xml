@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  需要读取窗口内容（canRetrieveWindowContent=true）以查找“跳过”按钮并点击。
+  flagIncludeNotImportantViews：让部分被标记为“对无障碍不重要”的广告按钮也能被读取到。
+  flagRetrieveInteractiveWindows：让 windows 能列出当前所有窗口，而不只是活动窗口。
+    广告常常挂在**没有输入焦点的浮层窗口**上，此时 rootInActiveWindow 返回的是底下那个
+    正常界面，广告子树根本进不了扫描范围——表现就是“屏幕上明明有广告，日志里却什么都没有”。
+    这个标记本身不改行为，只让我们能看见并区分这种情况。
+  本服务只做“找跳过按钮→点击”，不采集、不上传任何界面信息。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault|flagReportViewIds|flagIncludeNotImportantViews|flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
+    android:canTakeScreenshot="true"
+    android:description="@string/accessibility_description"
+    android:notificationTimeout="100" />

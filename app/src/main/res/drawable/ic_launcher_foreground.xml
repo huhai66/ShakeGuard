@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  玩具风 logo：白色盾牌 + 墨色描边 + 墨色叉，压在糖果青绿底（@color/ic_launcher_background）上。
+  盾牌造型沿用旧版，保留识别度；只是把原来的「黑盾白叉」翻成正片，好跟界面里的积木语言一致。
+  盾牌外缘距中心约 31.6，在自适应图标 33 半径的安全圆内。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#232A38"
+        android:strokeWidth="4"
+        android:strokeLineJoin="round"
+        android:pathData="M54,28 L78,36 V54 C78,70 66,80 54,84 C42,80 30,70 30,54 V36 Z" />
+    <path
+        android:strokeColor="#232A38"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:pathData="M44,44 L64,64 M64,44 L44,64" />
+</vector>

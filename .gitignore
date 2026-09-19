@@ -1,17 +1,21 @@
-# Android编译产物
+# Android 编译产物（build/ 匹配任意层级的 build 目录，含 app/build/）
 build/
-app/build/
 
-# Gradle缓存
-.gradle
-.gradlew
-.gradlew.bat
+# Gradle 缓存
+.gradle/
+
+# 本机配置：含各人自己的 Android SDK 路径，不应提交
+local.properties
 
 # 二进制安装包
 *.apk
+*.aab
 *.dex
 
-# IDE配置
-.idea
-.vscode
+# IDE 配置
+.idea/
+.vscode/
 *.iml
+
+# Kotlin 编译会话缓存
+.kotlin/
